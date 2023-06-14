@@ -140,12 +140,14 @@ ISR(TIMER1_COMPA_vect) {
     static bool buttonClicked = false;
     static bool buttonDebounced = false;
     static bool actionPerformed = false;
-    uint8_t pinb = PINB;
+    
+    static uint8_t pinb;
 
     if (!buttonClicked && anyPressed()) {
         buttonClicked = true;
         buttonDebounced = false;
         actionPerformed = false;
+        pinb = PINB;
         counter = 80; // ~400ms
     }
 
@@ -153,7 +155,11 @@ ISR(TIMER1_COMPA_vect) {
         if (counter > 0) {
             counter--;
             if (counter == 76) {
-                buttonDebounced = true;
+                if (pinb == PINB) {
+                    buttonDebounced = true;
+                } else {
+                    buttonClicked = false;
+                }
             }
         } else {
             buttonClicked = false;
