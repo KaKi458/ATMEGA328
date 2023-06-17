@@ -7,6 +7,7 @@
 #define LED1 PD3
 #define LED2 PD5
 #define LED3 PD6
+#define DEBUG PD0
 #define BUTTON1 PB0
 #define BUTTON2 PB1
 #define BUTTON3 PB2
@@ -15,6 +16,7 @@ volatile uint16_t adcValue;
 volatile uint8_t analogMode = 0;
 
 void setUpIO() {
+  DDRD |= (1 << DEBUG);
   DDRD |= (1 << LED1) | (1 << LED2) | (1 << LED3);
   DDRB &= ~((1 << BUTTON1) | (1 << BUTTON2) | (1 << BUTTON3));
   PORTB |= (1 << BUTTON1) | (1 << BUTTON2) | (1 << BUTTON3);
@@ -73,20 +75,28 @@ bool isPressed(uint8_t pinb, uint8_t button) {
   return !(pinb & (1 << button));
 }
 
-void changeState(uint8_t i) {
-  if (analogMode & (1 << i)) {
-    analogMode &= ~(1 << i);
-    uint8_t *reg = getRegister(i);
-    *reg = 255;
-  } else {
-    toggleLed(i);
-  }
-}
-
 void turnOnAnalogMode(uint8_t i) {
   analogMode |= (1 << i);
   uint8_t *reg = getRegister(i);
   *reg = adcValue;
+  PORTD |= (1 << DEBUG);
+}
+
+void turnOffAnalogMode(uint8_t i) {
+  analogMode &= ~(1 << i);
+  uint8_t *reg = getRegister(i);
+  *reg = 255;
+  if (!analogMode) {
+    PORTD &= ~(1 << DEBUG);
+  }
+}
+
+void changeState(uint8_t i) {
+  if (analogMode & (1 << i)) {
+    turnOffAnalogMode(i);
+  } else {
+    toggleLed(i);
+  }
 }
 
 ISR(TIMER1_COMPA_vect) {
@@ -95,9 +105,10 @@ ISR(TIMER1_COMPA_vect) {
   static uint8_t readyForRelease = 0;
   static uint8_t debounceCounter[8];
   static uint8_t pressedCounter[8];
-  uint8_t pinb;
+  static uint8_t analogModeEnabledInThisRound[8];
+  
 
-  pinb = PINB;
+  uint8_t pinb = PINB;
 
   for (uint8_t i = 0; i <= 2; i++) {
     if ((!(buttonPressed & (1 << i))) && isPressed(pinb, i)) {
@@ -105,10 +116,21 @@ ISR(TIMER1_COMPA_vect) {
       buttonDebounced &= ~(1 << i);
       debounceCounter[i] = 5;
       pressedCounter[i] = 0;
+      analogModeEnabledInThisRound[i] = analogMode & (1 << i) ? true : false;
     }
 
     if (buttonPressed & (1 << i)) {
-      pressedCounter[i]++;
+      if (pressedCounter[i] < 255) {
+        pressedCounter[i]++;
+      }
+    }
+
+    if (pressedCounter[i] > 150) {
+      if (!analogModeEnabledInThisRound[i]) {
+        turnOnAnalogMode(i);
+      } else {
+        turnOffAnalogMode(i);
+      }
     }
 
     if ((buttonPressed & (1 << i)) && (!isPressed(pinb, i)) && (buttonDebounced & (1 << i))) {
@@ -124,9 +146,7 @@ ISR(TIMER1_COMPA_vect) {
       if (readyForRelease & (1 << i)) {
         readyForRelease &= ~(1 << i);
         buttonPressed &= ~(1 << i);
-        if (pressedCounter[i] > 50 && !(analogMode & (1 << i))) {
-          turnOnAnalogMode(i);
-        } else {
+        if (pressedCounter[i] < 150) {
           changeState(i);
         }
       }
