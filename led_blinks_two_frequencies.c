@@ -32,7 +32,6 @@ int main(void) {
 	setUpTimer();
 	setUpInterrupts();
 
-	
 	while (1) {
 		if (PINB != button_state) {
 			_delay_ms(20);
@@ -41,7 +40,7 @@ int main(void) {
 				TCNT1 = 0;
 				if (!(PINB & (1 << BUTTON))) {
 					OCR1A = 3124;
-					} else {
+				} else {
 					OCR1A = 7812;
 				}
 			}
