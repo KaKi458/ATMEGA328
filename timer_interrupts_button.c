@@ -18,8 +18,7 @@ void setUpIO() {
 
 void setUpTimer() {
 	TCCR1B |=  (1 << WGM12) | (1 << CS12) | (1 << CS10);
-  // ~20ms
-	OCR1A = 312;
+	OCR1A = 312; // ~20ms
 }
 
 void setUpInterrupts() {
@@ -45,27 +44,22 @@ int main(void) {
 	setUpTimer();
 	setUpInterrupts();
 	
-	while (1) {
-
-	}
+	while (1);
 }
 
 ISR(TIMER1_COMPA_vect) {
-  // counter fot button ignore time
 	static uint8_t counter = 0;
-  // if button not clicked before and now is pressed
+
 	if ((button_clicked == 0) && !(PINB & (1 << BUTTON))) {
 		button_clicked = 1;
-    // ~400ms
-		counter = 20;
-    controlOutputs();
+		counter = 20; // ~400ms
+    	controlOutputs();
 	} 
 		
 	if (button_clicked == 1) {
 		if (counter > 0) {
 			counter--;
 		} else {
-      // button stops be ignored
 			button_clicked = 0;
 		}
 	}
