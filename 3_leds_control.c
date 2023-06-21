@@ -23,7 +23,7 @@ void setUpTimers() {
 	TCCR1B |=  (1 << WGM12) | (1 << CS12) | (1 << CS10);
 	OCR1A = 78; // ~5ms
 
-  TCCR0B |= (1 << CS02) | (1 << CS00); 
+  	TCCR0B |= (1 << CS02) | (1 << CS00); 
 }
 
 void setUpInterrupts() {
@@ -36,74 +36,74 @@ bool isPressed(uint8_t pinb, int button) {
 }
 
 bool anyPressed() {
-  return isPressed(PINB, BUTTON1) || isPressed(PINB, BUTTON2) || isPressed(PINB, BUTTON3);
+  	return isPressed(PINB, BUTTON1) || isPressed(PINB, BUTTON2) || isPressed(PINB, BUTTON3);
 }
 
 void toggle(int led) {
-  PORTD ^= (1 << led);
+  	PORTD ^= (1 << led);
 }
 
 void enableTimer0Interrupts() {
-  TIMSK0 |= (1 << TOIE0);
+  	TIMSK0 |= (1 << TOIE0);
 }
 
 void disableTimer0Interrupts() {
-  TIMSK0 &= ~(1 << TOIE0);
+  	TIMSK0 &= ~(1 << TOIE0);
 }
 
 void reset() {
-  if (LED_STATE != 0) {
-    disableTimer0Interrupts();
-    LED_STATE = 0;
-    PORTD = 0;
-  }
+	if (LED_STATE != 0) {
+		disableTimer0Interrupts();
+		LED_STATE = 0;
+		PORTD = 0;
+	}
 }
 
 void changeState(uint8_t pinb) {
 
-  if ( isPressed(pinb, BUTTON1) && !isPressed(pinb, BUTTON2) && !isPressed(pinb, BUTTON3) ) {
-  	reset();
-    toggle(LED1);
-  
-  } else if ( !isPressed(pinb, BUTTON1) && isPressed(pinb, BUTTON2) && !isPressed(pinb, BUTTON3) ) {
-    reset();
-	  toggle(LED2);
-  
-  } else if ( !isPressed(pinb, BUTTON1) && !isPressed(pinb, BUTTON2) && isPressed(pinb, BUTTON3) ) {
-  	reset(); 
-    toggle(LED3);
-  
-  } else if ( isPressed(pinb, BUTTON1) && isPressed(pinb, BUTTON2) && !isPressed(pinb, BUTTON3) ) {
-    if (LED_STATE != 1) {
-      PORTD = 0;
-	    LED_STATE = 1;
-      enableTimer0Interrupts();
-    }
-  
-  } else if ( isPressed(pinb, BUTTON1) && !isPressed(pinb, BUTTON2) && isPressed(pinb, BUTTON3) ) {
-	  if (LED_STATE != 2) {
-      PORTD = 0;
-      LED_STATE = 2; 
-      enableTimer0Interrupts();
-    }
-  } 
+	if ( isPressed(pinb, BUTTON1) && !isPressed(pinb, BUTTON2) && !isPressed(pinb, BUTTON3) ) {
+		reset();
+		toggle(LED1);
+	
+	} else if ( !isPressed(pinb, BUTTON1) && isPressed(pinb, BUTTON2) && !isPressed(pinb, BUTTON3) ) {
+		reset();
+	  	toggle(LED2);
+	
+	} else if ( !isPressed(pinb, BUTTON1) && !isPressed(pinb, BUTTON2) && isPressed(pinb, BUTTON3) ) {
+		reset(); 
+		toggle(LED3);
+	
+	} else if ( isPressed(pinb, BUTTON1) && isPressed(pinb, BUTTON2) && !isPressed(pinb, BUTTON3) ) {
+		if (LED_STATE != 1) {
+	  		PORTD = 0;
+			LED_STATE = 1;
+		  	enableTimer0Interrupts();
+		}
+	
+	} else if ( isPressed(pinb, BUTTON1) && !isPressed(pinb, BUTTON2) && isPressed(pinb, BUTTON3) ) {
+		if (LED_STATE != 2) {
+			PORTD = 0;
+			LED_STATE = 2; 
+			enableTimer0Interrupts();
+		}
+	} 
 }
 
 void toggleAllLeds() {
-  PORTD ^= (1 << LED1) | (1 << LED2) | (1 << LED3);
+	PORTD ^= (1 << LED1) | (1 << LED2) | (1 << LED3);
 }
 
 void blinkLedsOneByOne() {
-  if (PORTD == (1 << LED1)) {
-    PORTD = 0;
-    PORTD |= (1 << LED2);
-  } else if (PORTD == (1 << LED2)) {
-    PORTD = 0;
-    PORTD |= (1 << LED3);
-  } else {
-    PORTD = 0;
-    PORTD |= (1 << LED1);
-  }
+	if (PORTD == (1 << LED1)) {
+		PORTD = 0;
+		PORTD |= (1 << LED2);
+	} else if (PORTD == (1 << LED2)) {
+		PORTD = 0;
+		PORTD |= (1 << LED3);
+	} else {
+		PORTD = 0;
+		PORTD |= (1 << LED1);
+	}
 }
 
 int main(void) {
@@ -112,57 +112,53 @@ int main(void) {
 	setUpTimers();
 	setUpInterrupts();
 	
-	while (1) {
-
-  }
+	while (1);
 }
 
 ISR(TIMER1_COMPA_vect) {
 	
 	static uint8_t counter = 0;
-  static bool buttonClicked = false;
+	static bool buttonClicked = false;
 	static bool buttonDebounced = false;
-  static bool actionPerformed = false;
+	static bool actionPerformed = false;
+	
 	uint8_t pinb = PINB;
-
+	
 	if (!buttonClicked && anyPressed()) {
-    buttonClicked = true;
-    buttonDebounced = false;
-    actionPerformed = false;
+		buttonClicked = true;
+		buttonDebounced = false;
+		actionPerformed = false;
 		counter = 80; // ~400ms
 	}
 		
 	if (buttonClicked) {
 		if (counter > 0) {
 			counter--;
-      if (counter == 76) {
-        buttonDebounced = true;
-      }
-    } else {
+		  	if (counter == 76) {
+				buttonDebounced = true;
+			}
+		} else {
 			buttonClicked = false;
 		}
 	}
-
-  if (!actionPerformed && buttonClicked && buttonDebounced) {
-    pinb = PINB;
-    changeState(pinb);
-    actionPerformed = true;
-  } 
+	
+	if (!actionPerformed && buttonClicked && buttonDebounced) {
+		pinb = PINB;
+		changeState(pinb);
+		actionPerformed = true;
+	} 
 }
-
+	
 ISR(TIMER0_OVF_vect) {
-    static uint8_t counts = 0;
-    if (counts == 30) { // ~500ms
-      if (LED_STATE == 1) {
-        toggleAllLeds();
-      } else if (LED_STATE == 2) {
-        blinkLedsOneByOne();
-      }
-      counts = 0;
-    }
-    else {
-      counts++;
-    }
+	static uint8_t counts = 0;
+	if (counts == 30) { // ~500ms
+		if (LED_STATE == 1) {
+		toggleAllLeds();
+		} else if (LED_STATE == 2) {
+			blinkLedsOneByOne();
+		}
+		counts = 0;
+	} else {
+		counts++;
+	}
 }
-
-
